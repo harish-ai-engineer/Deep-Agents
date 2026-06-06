@@ -1,112 +1,148 @@
-<div align="center">
-  <a href="https://docs.langchain.com/oss/python/deepagents/overview#deep-agents-overview">
-    <picture>
-      <source media="(prefers-color-scheme: dark)" srcset=".github/images/logo-dark.svg">
-      <source media="(prefers-color-scheme: light)" srcset=".github/images/logo-light.svg">
-      <img alt="Deep Agents Logo" src=".github/images/logo-dark.svg" width="50%">
-    </picture>
-  </a>
-</div>
+# Deep Agents Development Workspace
 
-<div align="center">
-  <h3>The batteries-included agent harness.</h3>
-</div>
+An independently maintained development fork of
+[LangChain Deep Agents](https://github.com/langchain-ai/deepagents). This
+repository contains the Deep Agents Python SDK, terminal coding agent, CLI,
+protocol support, integrations, evaluation tools, and examples in one
+monorepo.
 
-<div align="center">
-  <a href="https://opensource.org/licenses/MIT" target="_blank"><img src="https://img.shields.io/pypi/l/deepagents" alt="PyPI - License"></a>
-  <a href="https://pypistats.org/packages/deepagents" target="_blank"><img src="https://img.shields.io/pepy/dt/deepagents" alt="PyPI - Downloads"></a>
-  <a href="https://pypi.org/project/deepagents/#history" target="_blank"><img src="https://img.shields.io/pypi/v/deepagents?label=%20" alt="Version"></a>
-  <a href="https://x.com/langchain_oss" target="_blank"><img src="https://img.shields.io/twitter/url/https/twitter.com/langchain_oss.svg?style=social&label=Follow%20%40LangChain" alt="Twitter / X"></a>
-</div>
+## Features
 
-<br>
+- Long-running agents with planning and context management
+- Sub-agent delegation with isolated context
+- Filesystem and shell tools
+- Interactive terminal coding agent
+- Multiple LLM provider integrations
+- Persistent conversations and memory
+- MCP and Agent Client Protocol support
+- Local, sandboxed, and remote execution backends
 
-Deep Agents is an open source agent harness — an opinionated agent that runs out of the box. Extend, override, or replace any piece.
+## Repository Layout
 
-**Principles:**
+```text
+libs/
+|-- deepagents/   Core Python SDK
+|-- code/         Interactive terminal coding agent (`dcode`)
+|-- cli/          Deployment CLI
+|-- acp/          Agent Client Protocol support
+|-- evals/        Evaluation suite
+`-- partners/     Partner integrations
 
-- **Opinionated** — defaults tuned for long-horizon, multi-step work
-- **Extensible** — override or replace any piece without forking
-- **Model-agnostic** — works with any LLM that supports tool calling: frontier, open-weight, or local
-- **Production-ready** — built on LangGraph (streaming, persistence, checkpointing) with first-class tracing, evaluation, and deployment via LangSmith
+examples/         Example agents and deployment patterns
+```
 
-**Features include:**
+## Requirements
 
-- **Sub-agents** — delegate tasks to agents with isolated context windows
-- **Filesystem** — read, write, edit, or search over pluggable local, sandboxed, or remote backends
-- **Context management** — summarize long threads and offload tool outputs to disk
-- **Shell access** — run commands in your sandbox of choice
-- **Persistent memory** — pluggable state and store backends for cross-session recall
-- **Human-in-the-loop** — approve, edit, or reject tool calls before they run
-- **Skills** — reusable behaviors the agent can load on demand
-- **Tools** — bring your own functions or any MCP server
+- [uv](https://docs.astral.sh/uv/)
+- Git
+- Python 3.11 or newer (managed automatically by `uv`)
+- An API key for the model provider you plan to use
 
-> [!NOTE]
-> Deep Agents is available as a JavaScript/TypeScript library — see [deepagents.js](https://github.com/langchain-ai/deepagentsjs).
+Do not commit API keys. For file-based local configuration, copy the root
+`.env.example` file to `libs/code/.env`; `.env` is ignored by Git.
 
-## Quickstart
+## Run the Terminal Agent
+
+### Windows PowerShell
+
+```powershell
+git clone <your-repository-url>
+cd <repository-directory>\libs\code
+
+uv sync --group test
+
+$env:OPENAI_API_KEY = Read-Host "OpenAI API key"
+uv run dcode
+```
+
+### macOS or Linux
 
 ```bash
-uv add deepagents
+git clone <your-repository-url>
+cd <repository-directory>/libs/code
+
+uv sync --group test
+
+read -s OPENAI_API_KEY
+export OPENAI_API_KEY
+uv run dcode
 ```
 
-```python
-from deepagents import create_deep_agent
+The local `libs/deepagents` package is installed in editable mode, so SDK
+changes are immediately available to the terminal agent.
 
-agent = create_deep_agent(
-    model="openai:gpt-5.5",
-    tools=[my_custom_tool],
-    system_prompt="You are a research assistant.",
-)
-result = agent.invoke({"messages": "Research LangGraph and write a summary"})
+## Develop the SDK
+
+```bash
+cd libs/deepagents
+uv sync --group test
+uv run --group test pytest tests/unit_tests
 ```
 
-The agent can plan, read/write files, and manage its own context. Add your own tools, swap models, customize prompts, configure sub-agents, and more. See the [documentation](https://docs.langchain.com/oss/python/deepagents/overview) for full details.
+Run quality checks from the package you changed:
 
-> [!TIP]
-> For developing, debugging, and deploying AI agents and LLM applications, see [LangSmith](https://docs.langchain.com/langsmith/home).
+```bash
+uv run --all-groups ruff check .
+uv run --all-groups ruff format . --check
+uv run --all-groups ty check deepagents
+```
 
-> [!NOTE]
-> **Deep Agents Code** — a pre-built coding agent in your terminal, similar to Claude Code or Cursor, powered by any LLM. Install with `curl -LsSf https://langch.in/dcode | bash`. See the [documentation](https://docs.langchain.com/deepagents-code) for the full feature set.
+The package Makefiles provide equivalent `test`, `lint`, `format`, and
+benchmark targets on systems with GNU Make installed.
 
-## FAQ
+## Configuration
 
-### How is this different from LangGraph or LangChain?
+The terminal agent supports OpenAI, Anthropic, Google, and other model
+providers. Set only the keys required by your selected provider:
 
-LangGraph is the graph runtime. LangChain's `create_agent` is a minimal agent harness on top of it. Deep Agents is a more opinionated harness on top of `create_agent` — same building blocks, but with filesystem, sub-agents, context management, and skills bundled in. For how the three relate, see the [LangChain ecosystem overview](https://docs.langchain.com/oss/python/concepts/products).
+```dotenv
+OPENAI_API_KEY=
+ANTHROPIC_API_KEY=
+GOOGLE_API_KEY=
+TAVILY_API_KEY=
+```
 
-### Does this work with open-weight or local models?
+Provider keys can be entered for the current shell session or stored in a
+local `.env` file. Never place real credentials in `.env.example`, source
+files, commits, issues, or chat messages.
 
-Yes. Any model that supports tool calling works — frontier APIs (OpenAI, Anthropic, Google), open-weight models hosted on providers like Baseten or Fireworks, and self-hosted models via Ollama, vLLM, or llama.cpp. Use any [LangChain chat model](https://docs.langchain.com/oss/python/langchain/models).
+## Testing
 
-### Can I use this in production?
+Unit tests do not require network access:
 
-Yes! Deep Agents is built on LangGraph, designed for production agent deployments. Pair it with [LangSmith](https://docs.langchain.com/langsmith/home) for tracing, evaluation, and monitoring. See [Going to production](https://docs.langchain.com/oss/python/deepagents/going-to-production) for the full guide.
+```bash
+cd libs/code
+uv run --group test pytest -n auto --benchmark-disable --disable-socket \
+  --allow-unix-socket tests/unit_tests
+```
 
-### When should I use Deep Agents vs. LangChain or LangGraph directly?
+Integration tests can use external services and may require provider
+credentials:
 
-All three are layers in the same stack — see the [LangChain ecosystem overview](https://docs.langchain.com/oss/python/concepts/products) for how they relate. Use **Deep Agents** when you want the full harness — planning, context management, delegation — out of the box. Use [**LangChain's `create_agent`**](https://docs.langchain.com/oss/python/langchain/agents) when you want a lighter harness without the bundled middleware. Drop to [**LangGraph**](https://docs.langchain.com/oss/python/langgraph/overview) when the agent loop itself isn't the right shape and you need a custom graph.
-
-The layers compose: any LangGraph `CompiledStateGraph` can be passed in as a sub-agent to a Deep Agent, so custom orchestration plugs in alongside the harness's defaults.
-
----
-
-## Resources
-
-- [Examples](examples/) — working agents and patterns
-- [Documentation](https://docs.langchain.com/oss/python/deepagents/overview) — conceptual overviews and guides
-- [LangChain ecosystem overview](https://docs.langchain.com/oss/python/concepts/products) — how Deep Agents, LangChain, LangGraph, and LangSmith fit together
-- [API reference](https://reference.langchain.com/python/deepagents/) — complete reference for all public classes, functions, and types
-- [Discussions](https://forum.langchain.com/c/oss-product-help-lc-and-lg/deep-agents/18) — community forum for technical questions, ideas, and feedback
-- [Contributing Guide](https://docs.langchain.com/oss/python/contributing/overview) — how to contribute and find good first issues
-- [Code of Conduct](https://github.com/langchain-ai/langchain/?tab=coc-ov-file) — community guidelines and standards
-
----
-
-## Acknowledgements
-
-Inspired by Claude Code: an attempt to identify what makes it general-purpose, and push that further.
+```bash
+cd libs/code
+uv run --group test pytest tests/integration_tests
+```
 
 ## Security
 
-Deep Agents follows a "trust the LLM" model. The agent can do anything its tools allow. Enforce boundaries at the tool/sandbox level, not by expecting the model to self-police. See the [security policy](https://github.com/langchain-ai/deepagents?tab=security-ov-file) for more information.
+Deep Agents follows a tool-boundary security model: an agent can perform any
+action allowed by its configured tools. Use restricted credentials, review
+tool permissions, and prefer isolated sandboxes for untrusted workloads.
+
+If a credential is accidentally exposed, revoke it at the provider
+immediately and replace it. Removing it from a later commit is not enough.
+
+## Upstream and License
+
+This repository is based on
+[langchain-ai/deepagents](https://github.com/langchain-ai/deepagents) and is
+distributed under the [MIT License](LICENSE). Original copyright and license
+notices are preserved.
+
+To pull future upstream changes after cloning this fork:
+
+```bash
+git remote add upstream https://github.com/langchain-ai/deepagents.git
+git fetch upstream
+```
